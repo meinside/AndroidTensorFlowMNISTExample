@@ -1,3 +1,5 @@
+# https://github.com/MindorksOpenSource/AndroidTensorFlowMNISTExample/blob/master/mnist.py
+
 from __future__ import print_function
 import shutil
 import os.path
@@ -18,7 +20,7 @@ batch_size = 128
 display_step = 10
 
 # Network Parameters
-n_input = 784  # MNIST data input (img shape: 28*28)
+n_input = 28 * 28  # MNIST data input (img shape: 28*28)
 n_classes = 10  # MNIST total classes (0-9 digits)
 dropout = 0.75  # Dropout, probability to keep units
 
@@ -26,7 +28,6 @@ dropout = 0.75  # Dropout, probability to keep units
 x = tf.placeholder(tf.float32, [None, n_input])
 y = tf.placeholder(tf.float32, [None, n_classes])
 keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
-
 
 # Create some wrappers for simplicity
 def conv2d(x, W, b, strides=1):
@@ -93,7 +94,7 @@ biases = {
 pred = conv_net(x, weights, biases, keep_prob)
 
 # Define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=pred))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # Evaluate model
@@ -101,7 +102,7 @@ correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
-init = tf.initialize_all_variables()
+init = tf.global_variables_initializer()
 
 # Launch the graph
 with tf.Session() as sess:
@@ -141,7 +142,7 @@ with tf.Session() as sess:
 # Create new graph for exporting
 g = tf.Graph()
 with g.as_default():
-    x_2 = tf.placeholder("float", shape=[None, 784], name="input")
+    x_2 = tf.placeholder("float", shape=[None, 28 * 28], name="input")
 
     WC1 = tf.constant(WC1, name="WC1")
     BC1 = tf.constant(BC1, name="BC1")
@@ -169,7 +170,7 @@ with g.as_default():
     OUTPUT = tf.nn.softmax(tf.matmul(FC1, W_OUT) + B_OUT, name="output")
 
     sess = tf.Session()
-    init = tf.initialize_all_variables()
+    init = tf.global_variables_initializer()
     sess.run(init)
 
     graph_def = g.as_graph_def()
