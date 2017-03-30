@@ -1,54 +1,107 @@
 # Android TensorFlow MNIST Machine Learning Example
-[![Mindorks](https://img.shields.io/badge/mindorks-opensource-blue.svg)](https://mindorks.com/open-source-projects)
-[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=102)](https://opensource.org/licenses/Apache-2.0)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/amitshekhariitbhu/AndroidTensorFlowMachineLearningExample/blob/master/LICENSE)
 
-<img src=https://raw.githubusercontent.com/MindorksOpenSource/AndroidTensorFlowMNISTExample/master/assets/ml_android.png >
+Forked from [MindorksOpenSource/AndroidTensorFlowMNISTExample](https://github.com/MindorksOpenSource/AndroidTensorFlowMNISTExample).
 
-##  About Android TensorFlow Machine Learning MNIST Example
-* This is an example project for creating machine learning model for MNIST to detect hand written digits.
-* Check [this project](https://github.com/MindorksOpenSource/AndroidTensorFlowMachineLearningExample) for building tensorFlow for Android.
+## Changed things are:
 
-# [Read this article. It describes everything about creating custom model for Android using TensorFlow.](https://blog.mindorks.com/creating-custom-model-for-android-using-tensorflow-3f963d270bfb)
+Some deprecated or outdated function calls were changed.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/MindorksOpenSource/AndroidTensorFlowMNISTExample/master/assets/1.png" width="250">
-  <img src="https://raw.githubusercontent.com/MindorksOpenSource/AndroidTensorFlowMNISTExample/master/assets/2.png" width="250">
-  <img src="https://raw.githubusercontent.com/MindorksOpenSource/AndroidTensorFlowMNISTExample/master/assets/3.png" width="250">
-</p>
-<br>
+Some things were removed or simplified.
 
-### How to train model?
-To create model by yourself, install TensorFlow and run python scripts like
-```sh
-    $ python mnist.py
+---
+
+## How to build library files
+
+Current `libtensorflow_inference.so` and `libandroid_tensorflow_inference_java.jar` were built with TensorFlow [v1.0.1](https://github.com/tensorflow/tensorflow/commit/e895d5ca395c2362df4f5c8f08b68501b41f8a98).
+
+If you want to build them with the newer version of TensorFlow,
+   
+read [this guide](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/android/README.md) or do the following:
+
+### Build `libtensorflow_inference.so`
+
+Clone the TensorFlow's repository and edit WORKSPACE file:
+
+```bash
+$ cd tensorflow
+$ vi WORKSPACE
 ```
 
-### Find this project useful ? :heart:
-* Support it by clicking the :star: button on the upper right of this page. :v:
+Edit `android_sdk_repository` and `android_ndk_repository` section like this:
 
-### Credits
-* The classifier example has been taken from Google TensorFlow example.
-* The custom drawing view used in this project is taken from [here](https://github.com/miyosuda/TensorFlowAndroidMNIST).
-
-[Check out Mindorks awesome open source projects here](https://mindorks.com/open-source-projects)
-
-### License
 ```
-   Copyright (C) 2017 MINDORKS NEXTGEN PRIVATE LIMITED
+# Uncomment and update the paths in these entries to build the Android demo.
+android_sdk_repository(
+    name = "androidsdk",
+    api_level = 23,
+    build_tools_version = "25.0.1",
+    # Replace with path to Android SDK on your system
+    path = "/Users/meinside/Documents/files/dev/android-sdk-macosx",
+)
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+# Android NDK r12b is recommended (higher may cause issues with Bazel)
+android_ndk_repository(
+    name="androidndk",
+    path="/Users/meinside/Downloads/android-ndk-r12b",
+    api_level=14) # This needs to be 14 or higher to compile TensorFlow.
 ```
 
-### Contributing to Android TensorFlow MNIST Machine Learning Example
-Just make pull request. You are in!
+Then run:
+
+```bash
+$ bazel build -c opt //tensorflow/contrib/android:libtensorflow_inference.so \
+   --crosstool_top=//external:android/crosstool \
+   --host_crosstool_top=@bazel_tools//tools/cpp:toolchain \
+   --cpu=armeabi-v7a
+```
+
+If you need `.so` files for other platforms, replace `--cpu=armeabi-v7a` with the desired one:
+
+* `--cpu=arm64`
+* `--cpu=x86`
+* `--cpu=x86_64`
+* ...
+
+Compiled file will be placed at `bazel-bin/tensorflow/contrib/android/libtensorflow_inference.so`.
+
+Copy it into `app/src/main/jniLibs/{PLATFORM_NAME}/`:
+
+```bash
+$ mkdir -p {APP_SRC_DIR}/app/src/main/jniLibs/arm64/
+$ cp bazel-bin/tensorflow/contrib/android/libtensorflow_inference.so {APP_SRC_DIR}/app/src/main/jniLibs/arm64/
+```
+
+#### Note: NDK version
+
+At the time of writing, (2017-03-30)
+
+both TensorFlow 1.0.0 and 1.0.1 fails to build `libtensorflow_inference.so` with latest NDK version(r13).
+
+But I could build it with r12b.
+
+### Build `libandroid_tensorflow_inference_java.jar`
+
+Run:
+
+```bash
+$ bazel build //tensorflow/contrib/android:android_tensorflow_inference_java
+```
+
+then copy `bazel-bin/tensorflow/contrib/android/libandroid_tensorflow_inference_java.jar` into `app/libs/`:
+
+```bash
+$ cp bazel-bin/tensorflow/contrib/android/libandroid_tensorflow_inference_java.jar {APP_SRC_DIR}/app/libs/
+```
+
+---
+
+## How to train it yourself
+
+Run `mnist.py` and overwrite generated `mnist_model_graph.pb` into `app/src/main/assets/`.
+
+```bash
+$ cd {APP_SRC_DIR}
+$ python mnist.py
+$ cp model/mnist_model_graph.pb app/src/main/assets/
+```
+
